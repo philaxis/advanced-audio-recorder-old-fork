@@ -44,6 +44,7 @@ import {
 	deepgramBiasMechanism,
 	DeepgramBiasMechanism,
 	termsWithinDeepgramKeyterm,
+	termsWithinSonioxContext,
 	termsWithinVoxtralContextBias,
 	termsWithinWhisperPrompt,
 	type DictionaryBiasPlan,
@@ -51,6 +52,7 @@ import {
 import { DeepgramProvider } from './DeepgramProvider';
 import { GeminiProvider } from './GeminiProvider';
 import { LocalWhisperProvider } from './LocalWhisperProvider';
+import { SonioxProvider } from './SonioxProvider';
 import { VoxtralProvider } from './VoxtralProvider';
 import { WhisperApiProvider } from './WhisperApiProvider';
 import { GEMINI_TOKEN_RATES, type TokenRate } from './geminiRates';
@@ -197,6 +199,15 @@ const VOXTRAL_RATES: readonly [string, number][] = [
 	['voxtral-mini-transcribe-realtime', 0.006],
 	['voxtral-mini', 0.003],
 ];
+
+/**
+ * Approximate Soniox asynchronous rates, USD per audio minute. Published as
+ * $0.10 per hour for file transcription, the same for every generation. Soniox
+ * bills a request that carries a custom context by token usage instead, which
+ * this does not model, so an estimate for a run with a dictionary can fall a
+ * little short.
+ */
+const SONIOX_RATES: readonly [string, number][] = [['stt-async', 0.1 / 60]];
 
 /**
  * Finds the rate whose model-id fragment appears in the (normalized) model id,
@@ -381,6 +392,32 @@ export const TRANSCRIPTION_ENGINES: Record<
 		create: cloudEngineFactory(
 			ENGINE_IDS.VOXTRAL,
 			(config) => new VoxtralProvider(config),
+		),
+	},
+	[TRANSCRIPTION_PROVIDER_IDS.SONIOX]: {
+		id: TRANSCRIPTION_PROVIDER_IDS.SONIOX,
+		label: EngineLabel.Soniox,
+		pricingUrl: 'https://soniox.com/pricing',
+		model: (s) => s.sonioxModel,
+		pricing: (model) => perMinutePricing(matchRate(SONIOX_RATES, model)),
+		// One cap on the size of the whole context, in tokens, for every model
+		// in the catalogue, with no cap on the number of terms - so the model
+		// argument is deliberately unread, as Voxtral's is.
+		planDictionary: (_model, terms) => {
+			const applied = termsWithinSonioxContext(terms);
+			if (applied.length < terms.length) {
+				return {
+					applied,
+					omitted: terms.slice(applied.length),
+					reason: 'context-size-limit',
+				};
+			}
+			return { applied, omitted: [] };
+		},
+		biasUnsupportedReason: () => null,
+		create: cloudEngineFactory(
+			ENGINE_IDS.SONIOX,
+			(config) => new SonioxProvider(config),
 		),
 	},
 	[TRANSCRIPTION_PROVIDER_IDS.LOCAL_WHISPER]: {

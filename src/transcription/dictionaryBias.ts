@@ -16,6 +16,7 @@
  * @module transcription/dictionaryBias
  */
 
+import { SONIOX_CONTEXT_TOKEN_BUDGET } from '../constants';
 import { dedupeTerms } from './dictionary';
 
 /**
@@ -93,6 +94,7 @@ export type DictionaryOmissionReason =
 	| 'keywords-limit'
 	| 'keyterm-token-budget'
 	| 'context-bias-limit'
+	| 'context-size-limit'
 	| 'prompt-window';
 
 /** The terms actually applied for a run and any that were left out. */
@@ -337,6 +339,19 @@ export function termsWithinVoxtralContextBias(terms: string[]): string[] {
 }
 
 /**
+ * The leading dictionary terms that fit Soniox's `context.terms` allowance:
+ * {@link SONIOX_CONTEXT_TOKEN_BUDGET} tokens in aggregate, there being no cap on
+ * the number of entries. Each term is a separate array element, so the join
+ * separator does not count. Idempotent, so a provider can re-apply it
+ * defensively on an already bounded list without changing it.
+ * @param terms - Parsed dictionary terms, in priority order
+ * @returns The prefix of terms that fits the context size limit
+ */
+export function termsWithinSonioxContext(terms: string[]): string[] {
+	return termsWithinBudget(terms, SONIOX_CONTEXT_TOKEN_BUDGET, false);
+}
+
+/**
  * A user-facing explanation of the dropped terms, or null when every term was
  * applied. Kept next to the plan so the message and the cap can never diverge.
  * @param plan - The biasing plan produced by {@link planDictionaryBias}
@@ -375,6 +390,12 @@ export function describeDictionaryOmission(
 			return (
 				`Custom dictionary: only the first ${plan.applied.length} of ${total} ` +
 				`terms were sent (Voxtral accepts at most ${VOXTRAL_CONTEXT_BIAS_LIMIT} context bias terms per request).`
+			);
+		case 'context-size-limit':
+			return (
+				`Custom dictionary: only the first ${plan.applied.length} of ${total} ` +
+				'terms were sent (Soniox limits the context of one request to 8,000 tokens). ' +
+				'Shorten the dictionary or remove long terms.'
 			);
 		case 'prompt-window':
 			return (

@@ -1598,6 +1598,7 @@ describe('settings definitions', () => {
 				EngineLabel.Voxtral,
 				EngineLabel.Mistral,
 				EngineLabel.DeepSeek,
+				EngineLabel.Soniox,
 				EngineLabel.LocalWhisper,
 			]);
 			// A provider that both transcribes and answers prompts keeps one
@@ -1637,6 +1638,14 @@ describe('settings definitions', () => {
 				'Model',
 				'Model catalogue',
 				'Max output tokens',
+			]);
+			// A speech-only engine with an account of its own: a key and a
+			// catalogue, and no ceiling on an answer it never writes.
+			expect(pageEntryNames(EngineLabel.Soniox)).toEqual([
+				'Base URL',
+				'Soniox API key',
+				'Model',
+				'Model catalogue',
 			]);
 		});
 

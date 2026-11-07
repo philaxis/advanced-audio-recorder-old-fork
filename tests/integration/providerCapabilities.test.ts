@@ -13,6 +13,7 @@ import {
 	effectiveDiarize,
 	effectiveDictionary,
 	GEMINI_CAPABILITIES,
+	SONIOX_CAPABILITIES,
 	VOXTRAL_CAPABILITIES,
 	configuredLanguageHint,
 	configuredLanguages,
@@ -52,6 +53,7 @@ describe('transcription provider capabilities', () => {
 		expect(DEEPGRAM_CAPABILITIES.supportsDiarization).toBe(true);
 		expect(GEMINI_CAPABILITIES.supportsDiarization).toBe(true);
 		expect(VOXTRAL_CAPABILITIES.supportsDiarization).toBe(true);
+		expect(SONIOX_CAPABILITIES.supportsDiarization).toBe(true);
 	});
 
 	it('lets only Gemini rewrite what it heard inside the transcription request', () => {
@@ -76,6 +78,32 @@ describe('transcription provider capabilities', () => {
 		// for words alone answers in the same `segments` array with one segment
 		// per word, which would cost the transcript its sentences.
 		expect(VOXTRAL_CAPABILITIES.wordTimestamps).toBe('none');
+		// Every Soniox token carries its own start and end, asked for or not.
+		expect(SONIOX_CAPABILITIES.wordTimestamps).toBe('always');
+	});
+
+	// Soniox documents 300 minutes per file and says it cannot be raised, reads
+	// every container the plugin records, and is held to the cap by the
+	// endpoint for the reason Voxtral is.
+	it('caps Soniox at 300 minutes, left to the endpoint, and reads webm as it stands', () => {
+		expect(SONIOX_CAPABILITIES.maxRequestSeconds).toBe(300 * 60);
+		expect(SONIOX_CAPABILITIES.durationCapCheck).toBe(
+			DurationCapCheck.LeftToEndpoint,
+		);
+		for (const extension of ['webm', 'ogg', 'mp3', 'wav', 'm4a', 'mp4']) {
+			expect(readsAsItStands(SONIOX_CAPABILITIES, extension)).toBe(true);
+		}
+	});
+
+	it('takes one language hint on Soniox and a code list only as its first', () => {
+		expect(SONIOX_CAPABILITIES.readsLanguageHint).toBe(true);
+		expect(SONIOX_CAPABILITIES.readsLanguageList).toBe(false);
+		expect(effectiveLanguage(TRANSCRIPTION_PROVIDER_IDS.SONIOX, 'ko')).toBe(
+			'ko',
+		);
+		expect(
+			effectiveLanguage(TRANSCRIPTION_PROVIDER_IDS.SONIOX, 'ko, en'),
+		).toBe('ko');
 	});
 
 	it('caps Gemini and Voxtral by per-request duration; others are unbounded', () => {
@@ -129,6 +157,9 @@ describe('transcription provider capabilities', () => {
 		expect(TRANSCRIPTION_PROVIDER_CAPABILITIES.voxtral).toBe(
 			VOXTRAL_CAPABILITIES,
 		);
+		expect(TRANSCRIPTION_PROVIDER_CAPABILITIES.soniox).toBe(
+			SONIOX_CAPABILITIES,
+		);
 	});
 
 	it('exposes diarization support through the UI helper', () => {
@@ -161,6 +192,7 @@ describe('transcription provider capabilities', () => {
 		expect(DEEPGRAM_CAPABILITIES.supportsDictionary).toBe(true);
 		expect(GEMINI_CAPABILITIES.supportsDictionary).toBe(true);
 		expect(VOXTRAL_CAPABILITIES.supportsDictionary).toBe(true);
+		expect(SONIOX_CAPABILITIES.supportsDictionary).toBe(true);
 	});
 
 	it('exposes dictionary support through the UI helper', () => {
@@ -189,6 +221,7 @@ describe('transcription provider capabilities', () => {
 		// terms must say so or it is handed a prompt sentence it cannot use.
 		expect(DEEPGRAM_CAPABILITIES.biasChannel).toBe('keyterm');
 		expect(VOXTRAL_CAPABILITIES.biasChannel).toBe('keyterm');
+		expect(SONIOX_CAPABILITIES.biasChannel).toBe('keyterm');
 		expect(WHISPER_API_CAPABILITIES.biasChannel).toBe('prompt');
 		expect(LOCAL_WHISPER_CAPABILITIES.biasChannel).toBe('prompt');
 		expect(GEMINI_CAPABILITIES.biasChannel).toBe('prompt');

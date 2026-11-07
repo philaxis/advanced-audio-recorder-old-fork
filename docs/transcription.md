@@ -9,6 +9,7 @@
     - [Deepgram](#deepgram)
     - [Google Gemini](#google-gemini)
     - [Mistral Voxtral](#mistral-voxtral)
+    - [Soniox](#soniox)
     - [Local whisper.cpp (desktop)](#local-whispercpp-desktop)
 - [Model picker and language](#model-picker-and-language)
     - [Several languages in one recording](#several-languages-in-one-recording)
@@ -68,7 +69,7 @@ The first two open the **Transcribe audio** dialog, where you can override the e
 
 ## Engines
 
-Choose the **Transcription engine** from the dropdown. Five engines are available:
+Choose the **Transcription engine** from the dropdown. Six engines are available:
 
 | Engine                              | Type                        | Size limit per request | Diarization | Network  |
 | ----------------------------------- | --------------------------- | ---------------------- | ----------- | -------- |
@@ -76,6 +77,7 @@ Choose the **Transcription engine** from the dropdown. Five engines are availabl
 | **Deepgram**                        | Cloud (pre-recorded API)    | 2 GB                   | Yes         | Required |
 | **Google Gemini**                   | Cloud (multimodal)          | 2 GB                   | Yes         | Required |
 | **Mistral Voxtral**                 | Cloud (batch transcription) | 1 GB                   | Yes         | Required |
+| **Soniox**                          | Cloud (asynchronous API)    | 300 minutes            | Yes         | Required |
 | **Local whisper.cpp (desktop)**     | Local binary, fully offline | None (local)           | No          | None     |
 
 Audio preparation (decoding and chunking, when a provider needs it) happens **in memory**. Whenever a provider accepts the original container and the file fits the limit, the file is sent untouched, which keeps memory low and avoids re-encoding. Nothing is written to disk during preparation, except that the local whisper.cpp engine hands each request to the binary as a temporary WAV and deletes it afterward.
@@ -180,6 +182,33 @@ Behavior and limits:
 
 Getting a key: [Mistral API key](use-cases/mistral-api-key.md). The **Voxtral model list** link in the **Model** row's description points at the [Mistral offline transcription guide](https://docs.mistral.ai/studio/audio/speech_to_text/offline_transcription).
 
+### Soniox
+
+Soniox's asynchronous speech-to-text API, run on the `stt-async-*` models. It works on a file it stores rather than on a request body: the plugin uploads the recording, starts a transcription over it, waits for it to finish, reads the transcript back, and then deletes both the file and the transcription from your Soniox account. The models cover more than 60 languages, Korean among them.
+
+Settings to fill:
+
+| Setting            | Description                                                                                                                          | Default                     |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | --------------------------- |
+| **Base URL**       | Soniox API base. A project in a regional data location uses `api.eu.soniox.com`, `api.jp.soniox.com` or `api.in.soniox.com` instead. | `https://api.soniox.com/v1` |
+| **Soniox API key** | Your Soniox key. Kept in Obsidian's keychain on this device.                                                                         | -                           |
+| **Model**          | Model id in use, picked from the ids the **Model catalogue** entry below it holds.                                                   | `stt-async-v6`              |
+
+Behavior and limits:
+
+- **Up to 300 minutes in one request**, so a whole meeting is transcribed in one piece and speaker numbering stays consistent from start to finish. Soniox states that limit cannot be raised. It documents no size limit for one file, so the plugin sends files whole up to 2 GB, which only an uncompressed recording of several hours would reach first. A recording the plugin decodes has its length measured before anything is uploaded, and one past 300 minutes is split into parts that are stitched back onto one timeline. Speaker numbering can then reset between parts, and a diarized split shows the same warning as on Gemini. A recording in a container Soniox reads that is longer than 300 minutes is measured only by Soniox, which refuses it in its own words.
+- **No container conversion.** Soniox detects the format of the upload itself and reads AAC, AIFF, AMR, ASF, FLAC, MP3, OGG, WAV, WebM, M4A and MP4, which includes everything this plugin records, the default `webm` among them. Recordings are uploaded untouched, so nothing is decoded and there is no memory cost on a long one.
+- **Diarization supported.** Turn on **Speaker diarization** to request speaker labels (`Speaker 1`, `Speaker 2`, ...). They can be renamed like any other engine's.
+- **Per-word timing on every run.** Every token of the transcript carries its own start and end, so the JSON file output holds word times whatever the **Word-level timestamps** switch says, and the switch is shown disabled with the engine's behaviour named under it. Soniox writes Korean in syllable-sized pieces, and a new word starts where Soniox put a space before a piece, so Korean words and spacing come back as written. A recording is cut into segments at the end of a sentence and wherever the speaker changes.
+- **The language is a hint, not a limit.** **Language** is sent as Soniox's `language_hints` (for example `ko`), which improves accuracy for that language without stopping other languages being recognised, so a Korean meeting with English terms in it stays as spoken. Only the primary part of a regional code is sent (`pt-BR` becomes `pt`), and of several codes separated by commas only the first is. With **Language** left on `auto`, Soniox detects the language itself, and the transcript reports the language most of the text is in.
+- **Biasing through a term list.** The dictionary is sent as Soniox's `context.terms`, in the spelling you typed it. There is no cap on the number of terms, only on the size of the whole context, which Soniox limits to 8,000 tokens. The plugin keeps the leading terms that fit about 7,000 tokens, measured by byte count so Korean and other non-Latin terms are never reported as applied while Soniox would reject them, and a notice names how many were left out. Write names in the script people speak them in.
+- **Waiting for the result.** A transcription is checked first after one second and then at growing intervals up to ten seconds. The wait is capped by **Request timeout**, so raise it above its 10-minute default before transcribing a recording of several hours. **Cancel** ends the wait at once and deletes what was uploaded.
+- **Cost.** Soniox bills about **$0.10 per audio hour** for file transcription, which is what the cost estimate uses. A request that carries a dictionary is billed by token usage instead, which the estimate does not model, so a run with a long dictionary can cost slightly more than shown.
+- **No speech translation.** The plugin does not use Soniox's translation block, so **Translate speech to English** is disabled for this engine. Use the [translation task](llm-post-processing.md) of LLM post-processing on the finished transcript instead.
+- **The old model is going away.** `stt-async-v5` is listed beside v6 so a recording can be compared against the previous generation, but Soniox removes it on December 15, 2026, after which requests for it run on v6.
+
+Getting a key: [Soniox API key](use-cases/soniox-api-key.md). The **Soniox model list** link in the **Model** row's description points at the [Soniox models page](https://soniox.com/docs/stt/models).
+
 ### Local whisper.cpp (desktop)
 
 Runs a local `whisper.cpp` binary with **no network access** - everything stays on your machine. Desktop only.
@@ -214,7 +243,7 @@ Every cloud engine's page carries the same pair of rows: a **Model** dropdown ho
 - **Delete one** - the button on a catalogue row removes that id.
 - **Put one to work** - tapping a catalogue row selects that id, and the row in use says **In use** under its name.
 - **Filter the list** - type in the **Filter models** field above the catalogue once the list is long enough to scroll.
-- **Catalogue link** - the **Model** row's description ends in a link to that engine's official model list. Every engine carries one, Voxtral, Anthropic and Mistral included.
+- **Catalogue link** - the **Model** row's description ends in a link to that engine's official model list. Every engine carries one, Voxtral, Soniox, Anthropic and Mistral included.
 
 The catalogue lives on a page of its own, because a vendor catalogue can run to thirty ids and inline they would bury the settings after them.
 
@@ -253,6 +282,7 @@ Only one engine can be told several languages at once, because only its request 
 | Deepgram          | Only the first code is sent. Deepgram's own `multi` mode does not cover every language pair, so the plugin does not use it.               |
 | Local whisper.cpp | Only the first code is sent.                                                                                                              |
 | Mistral Voxtral   | Nothing is sent. The engine detects the language itself.                                                                                  |
+| Soniox            | Only the first code is sent, as a language hint that does not stop other languages being recognised.                                      |
 
 What the list changes on Gemini:
 
@@ -269,7 +299,7 @@ The plugin names no language of its own in the instruction it sends: the codes c
 
 The transcript data model carries a **speaker** label per segment. To populate it, enable **Speaker diarization** - the provider then detects the number of speakers automatically and labels segments (for example `Speaker 1`, `Speaker 2`).
 
-- **Diarization is available with Deepgram, Google Gemini, and Mistral Voxtral.** For Whisper API and local whisper.cpp the **Speaker diarization** toggle is **disabled and greyed out**, since those engines never return speaker labels.
+- **Diarization is available with Deepgram, Google Gemini, Mistral Voxtral, and Soniox.** For Whisper API and local whisper.cpp the **Speaker diarization** toggle is **disabled and greyed out**, since those engines never return speaker labels.
 - The effective state is what matters: a stored "on" reads as off the moment you switch to an engine that cannot diarize, so the toggle never claims a result it cannot deliver.
 
 When diarization is **not in effect** (an engine that cannot diarize, or the toggle turned off), speaker labels are **stripped from the transcript entirely**. Neither the in-note Markdown nor the sidecar file - **including JSON** - shows them. The strip happens once on the canonical transcript, so every output path stays consistent.
@@ -373,12 +403,14 @@ Each engine consumes the list the way its own API supports:
 - **Deepgram Nova-2 and older** (Nova, Enhanced, Base) send each term as a `keywords` parameter, Deepgram's keyword boosting. Keyword boosting favors single words, so multi-word entries bias most reliably on Nova-3, Gemini, and Whisper rather than here.
 - **Whisper API and local whisper.cpp** send the terms as the recognition prompt, the OpenAI `prompt` field and the whisper.cpp `--prompt` flag respectively; for the local engine that flag is placed before your extra args, so a `--prompt` you supply yourself still wins.
 - **Google Gemini** folds the terms into the instruction text sent alongside the audio.
+- **Mistral Voxtral** sends the terms as `context_bias`, and **Soniox** as `context.terms`.
 
 Provider request limits are enforced so a request never carries terms the engine would reject or silently ignore, and whenever some terms are left out a notice tells you it happened:
 
 - **Deepgram Nova-3 accepts at most 100 keyterms and 500 keyterm tokens** in one request, so a longer glossary is trimmed to the first terms that fit both bounds; several long multi-word terms can reach the token limit well before 100 entries.
 - **Deepgram Nova-2 and older accept at most 100 keywords** in one request, so a longer glossary is trimmed to the first 100 terms.
 - **The Whisper prompt holds only about 224 tokens**, so a long list is trimmed to the terms that fit; the OpenAI API and local whisper.cpp share this bound.
+- **Voxtral accepts at most 100 `context_bias` entries**, and **Soniox limits the whole context of a request to 8,000 tokens**, so a longer glossary is trimmed to the leading terms that fit.
 
 Term length is measured conservatively (by byte count) so a glossary is never reported as applied while the engine quietly rejects or drops it. Short abbreviations, punctuation, and non-Latin scripts such as Cyrillic cost more tokens than their character count suggests, so with those a few terms fewer may fit than a plain character count would imply.
 
@@ -656,9 +688,9 @@ All transcription settings live under **Settings > Advanced Audio Recorder > Tra
 | **Enable transcription**            | Master toggle that reveals the rest of the section.                                                                                       | Off                            |
 | **Transcribe after recording**      | Auto-transcribe each saved recording (first file only).                                                                                   | Off                            |
 | **Show cost estimates**             | Show an approximate API cost before a run and a running session total (cloud engines only).                                               | On                             |
-| **Transcription engine**            | Whisper API / Deepgram / Google Gemini / Mistral Voxtral / Local whisper.cpp.                                                             | Whisper API                    |
+| **Transcription engine**            | Whisper API / Deepgram / Google Gemini / Mistral Voxtral / Soniox / Local whisper.cpp.                                                    | Whisper API                    |
 | **Language**                        | `auto` to detect, an ISO code (`en`, `ru`, `es`), or several separated by commas (`pl, uk`). Ignored by Voxtral, which detects it itself. | `auto`                         |
-| **Speaker diarization**             | Request speaker labels (Deepgram, Gemini, and Voxtral only).                                                                              | Off                            |
+| **Speaker diarization**             | Request speaker labels (Deepgram, Gemini, Voxtral, and Soniox only).                                                                      | Off                            |
 | **Translate speech to English**     | Write the recording down in English whatever was spoken (Whisper API only).                                                               | Off                            |
 | **Word-level timestamps**           | Per-word timing in JSON file output. Selectable on Whisper API, the one engine that reads the request.                                    | Off                            |
 | **Request timeout**                 | Minutes before one request is aborted and reported (cloud engines only). Range 1-60.                                                      | 10                             |
@@ -694,7 +726,7 @@ Per-engine fields (base URL, key, model picker, upload chunk size) are documente
 
 - **"Transcribe audio" is missing from the menu** - enable **Enable transcription** in settings first.
 - **The Transcribe audio palette command does nothing** - it runs only when the active file is an audio file and transcription is enabled. Open the audio file (or its note) and try again.
-- **Speaker labels never appear** - only Deepgram, Gemini, and Mistral Voxtral diarize, so the toggle is disabled for Whisper API and local whisper.cpp. With a diarizing engine, make sure **Speaker diarization** and **Include speakers** are on. Without diarization in effect, labels are stripped everywhere, including the JSON file.
+- **Speaker labels never appear** - only Deepgram, Gemini, Mistral Voxtral, and Soniox diarize, so the toggle is disabled for Whisper API and local whisper.cpp. With a diarizing engine, make sure **Speaker diarization** and **Include speakers** are on. Without diarization in effect, labels are stripped everywhere, including the JSON file.
 - **Speaker numbers change partway through a Gemini transcript** - a recording longer than 15 minutes is split into parts and Gemini renumbers speakers per part. Use **Deepgram** (sends the whole file) or split the recording for consistent speakers. A recording of exactly 15 minutes is not split and shows no such warning.
 - **"Could not insert the transcript into the note"** - the note was not open in editing mode. The transcript is saved as a sidecar file as a fallback; the notice shows its path. Open the note in editing mode to insert there.
 - **A request times out** - raise **Request timeout** (up to 60 minutes) for slow connections or very large uploads, or split the file first.

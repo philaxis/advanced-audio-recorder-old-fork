@@ -16,6 +16,7 @@ import {
 	WHISPER_PROMPT_TOKEN_LIMIT,
 	deepgramBiasMechanism,
 	describeDictionaryOmission,
+	termsWithinSonioxContext,
 	termsWithinWhisperPrompt,
 	tokenUpperBound,
 	termsWithinVoxtralContextBias,
@@ -26,7 +27,10 @@ import type {
 	DictionaryBiasPlan,
 } from 'src/transcription/dictionaryBias';
 import { planDictionaryBias } from 'src/transcription/providers/engines';
-import { TRANSCRIPTION_PROVIDER_IDS } from 'src/constants';
+import {
+	SONIOX_CONTEXT_TOKEN_BUDGET,
+	TRANSCRIPTION_PROVIDER_IDS,
+} from 'src/constants';
 import { EngineLabel } from 'src/providers/providers';
 
 /** Builds n unique terms, wide enough to blow past the prompt window. */
@@ -342,6 +346,40 @@ describe('planDictionaryBias', () => {
 		expect(plan.reason).toBeUndefined();
 	});
 
+	it('sends every Soniox term that fits the context budget', () => {
+		// A Korean term costs three bytes a syllable, so the budget is read in
+		// bytes and not in characters.
+		const input = ['이그니스', '소니옥스', 'Obsidian'];
+
+		const plan = planDictionaryBias(
+			TRANSCRIPTION_PROVIDER_IDS.SONIOX,
+			'nova-3',
+			input,
+		);
+
+		expect(plan.applied).toEqual(input);
+		expect(plan.omitted).toEqual([]);
+		expect(plan.reason).toBeUndefined();
+	});
+
+	it('caps Soniox at the context budget, keeping the leading terms', () => {
+		const input = manyTerms(2000);
+
+		const plan = planDictionaryBias(
+			TRANSCRIPTION_PROVIDER_IDS.SONIOX,
+			'nova-3',
+			input,
+		);
+
+		expect(plan.reason).toBe('context-size-limit');
+		expect(plan.applied).toEqual(input.slice(0, plan.applied.length));
+		expect(plan.applied.length + plan.omitted.length).toBe(input.length);
+		expect(plan.omitted.length).toBeGreaterThan(0);
+		expect(tokenUpperBound(plan.applied.join(''))).toBeLessThanOrEqual(
+			SONIOX_CONTEXT_TOKEN_BUDGET,
+		);
+	});
+
 	it('sends every term for Gemini (no hard cap)', () => {
 		const input = manyTerms(400);
 		const plan = planDictionaryBias(
@@ -351,6 +389,33 @@ describe('planDictionaryBias', () => {
 		);
 		expect(plan.applied).toEqual(input);
 		expect(plan.omitted).toEqual([]);
+	});
+});
+
+describe('termsWithinSonioxContext', () => {
+	it('keeps nothing from an empty list', () => {
+		expect(termsWithinSonioxContext([])).toEqual([]);
+	});
+
+	it('stops at the first term that would overflow, rather than skipping it', () => {
+		const long = 'x'.repeat(SONIOX_CONTEXT_TOKEN_BUDGET);
+
+		expect(termsWithinSonioxContext(['ab', long, 'cd'])).toEqual(['ab']);
+	});
+
+	it('is idempotent on a list it already bounded', () => {
+		const bounded = termsWithinSonioxContext(manyTerms(2000));
+
+		expect(termsWithinSonioxContext(bounded)).toEqual(bounded);
+	});
+
+	it('measures a Korean term by its UTF-8 bytes', () => {
+		// 한 is three bytes, so 2334 of them overflow a 7000-token budget that
+		// 2334 characters would not.
+		const korean = '한'.repeat(2334);
+
+		expect(termsWithinSonioxContext([korean])).toEqual([]);
+		expect(termsWithinSonioxContext(['한'.repeat(2333)])).toHaveLength(1);
 	});
 });
 
@@ -477,6 +542,19 @@ describe('describeDictionaryOmission', () => {
 		expect(message).not.toContain(EngineLabel.Deepgram);
 		expect(message).toContain(String(VOXTRAL_CONTEXT_BIAS_LIMIT));
 		expect(message).toContain(String(VOXTRAL_CONTEXT_BIAS_LIMIT + 5));
+	});
+
+	it('names the Soniox context limit rather than a Deepgram or Voxtral one', () => {
+		const message = describeDictionaryOmission({
+			applied: ['a', 'b'],
+			omitted: ['c'],
+			reason: 'context-size-limit',
+		});
+
+		expect(message).toContain('Soniox');
+		expect(message).toContain('2 of 3');
+		expect(message).not.toContain(EngineLabel.Deepgram);
+		expect(message).not.toContain('Voxtral');
 	});
 
 	it('names the keyterm token budget when long terms did not fit', () => {

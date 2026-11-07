@@ -72,7 +72,7 @@ export function transcriptionGroup(
 			// lists them by name alone.
 			transcriptionEngineChoiceRow(
 				'Transcription engine',
-				'Whisper API, Deepgram, or Google Gemini (cloud), or a local whisper.cpp binary (desktop). Configure each one under Engines.',
+				'Whisper API, Deepgram, Google Gemini, Mistral Voxtral, or Soniox (cloud), or a local whisper.cpp binary (desktop). Configure each one under Engines.',
 				'transcriptionProvider',
 				enabled,
 			),

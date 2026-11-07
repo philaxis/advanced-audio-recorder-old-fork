@@ -35,6 +35,7 @@ import {
 	LLM_OPENAI_MODEL_SUGGESTIONS,
 	MODEL_SEED_GENERATION,
 	PLUGIN_LOG_PREFIX,
+	SONIOX_MODEL_SUGGESTIONS,
 	VOXTRAL_MODEL_SUGGESTIONS,
 	WHISPER_API_MODEL_SUGGESTIONS,
 } from '../constants';
@@ -1018,6 +1019,7 @@ function migrateModelCatalogues(
 		['llmOpenAiModels', [...LLM_OPENAI_MODEL_SUGGESTIONS]],
 		['llmAnthropicModels', [...LLM_ANTHROPIC_MODEL_SUGGESTIONS]],
 		['voxtralModels', [...VOXTRAL_MODEL_SUGGESTIONS]],
+		['sonioxModels', [...SONIOX_MODEL_SUGGESTIONS]],
 		['llmMistralModels', [...LLM_MISTRAL_MODEL_SUGGESTIONS]],
 		['llmDeepSeekModels', [...LLM_DEEPSEEK_MODEL_SUGGESTIONS]],
 	];

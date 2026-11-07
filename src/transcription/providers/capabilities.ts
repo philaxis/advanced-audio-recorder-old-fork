@@ -13,6 +13,8 @@ import {
 	GEMINI_AUDIO_MIME_TYPES,
 	GEMINI_MAX_REQUEST_BYTES,
 	GEMINI_MAX_WHOLE_FILE_SECONDS,
+	SONIOX_MAX_REQUEST_BYTES,
+	SONIOX_MAX_REQUEST_SECONDS,
 	TRANSCRIPTION_PROVIDER_IDS,
 	VOXTRAL_AUDIO_EXTENSIONS,
 	VOXTRAL_MAX_REQUEST_BYTES,
@@ -226,6 +228,42 @@ export const VOXTRAL_CAPABILITIES: ProviderCapabilities = {
 	estimatesTimecodes: false,
 };
 
+/**
+ * Soniox asynchronous API: one request carries a file of up to 300 minutes, so
+ * a recording is sent whole and speaker numbering stays consistent.
+ *
+ * Every container the plugin records is among the ones the endpoint detects on
+ * its own (aac, aiff, amr, asf, flac, mp3, ogg, wav, webm, m4a, mp4), notably
+ * the `webm` it records by default, so nothing is decoded unless the file is
+ * too large for one request. The 300 minutes are the endpoint's own and fixed,
+ * and are not proven through the byte size of a file it reads, for the reason
+ * Voxtral's three hours are not (see {@link VOXTRAL_CAPABILITIES}): the byte
+ * proof would decode every longer recording into a WAV several times its size.
+ * A recording that is decoded anyway is measured and split at the cap.
+ */
+export const SONIOX_CAPABILITIES: ProviderCapabilities = {
+	maxRequestBytes: SONIOX_MAX_REQUEST_BYTES,
+	maxRequestSeconds: SONIOX_MAX_REQUEST_SECONDS,
+	durationCapCheck: DurationCapCheck.LeftToEndpoint,
+	originalContainers: ANY_CONTAINER,
+	supportsDiarization: true,
+	// Terms ride in `context.terms`, a flat list bounded by the size of the
+	// whole context, which is the keyterm shape rather than the prompt one.
+	supportsDictionary: true,
+	// Every token of the transcript carries its own start and end, asked for or
+	// not, and the mapping assembles words from them.
+	wordTimestamps: WordTimestampSupport.Always,
+	biasChannel: AdvancedBiasChannel.Keyterm,
+	supportsSpeechTranslation: false,
+	// `language_hints` takes it, and it improves accuracy without forbidding
+	// the other languages, so a recording that mixes them is still written in
+	// each.
+	readsLanguageHint: true,
+	readsLanguageList: false,
+	rewritesInRequest: false,
+	estimatesTimecodes: false,
+};
+
 /** Capabilities for every engine, keyed by its settings id. */
 export const TRANSCRIPTION_PROVIDER_CAPABILITIES: Record<
 	TranscriptionProviderId,
@@ -236,6 +274,7 @@ export const TRANSCRIPTION_PROVIDER_CAPABILITIES: Record<
 	[TRANSCRIPTION_PROVIDER_IDS.DEEPGRAM]: DEEPGRAM_CAPABILITIES,
 	[TRANSCRIPTION_PROVIDER_IDS.GEMINI]: GEMINI_CAPABILITIES,
 	[TRANSCRIPTION_PROVIDER_IDS.VOXTRAL]: VOXTRAL_CAPABILITIES,
+	[TRANSCRIPTION_PROVIDER_IDS.SONIOX]: SONIOX_CAPABILITIES,
 };
 
 /**

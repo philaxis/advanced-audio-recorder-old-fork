@@ -30,6 +30,7 @@ Cloud transcription engines (and the LLM post-processing providers) authenticate
 | [Deepgram](deepgram-api-key.md)                   | Deepgram                 | The **Deepgram** engine with diarization, free credit.      |
 | [Google Gemini](gemini-api-key.md)                | Google AI Studio         | The **Gemini** engine for long files and LLM reuse.         |
 | [Mistral](mistral-api-key.md)                     | Mistral                  | The **Mistral Voxtral** engine and Mistral post-processing. |
+| [Soniox](soniox-api-key.md)                       | Soniox                   | The **Soniox** engine, strong on Korean and 60+ languages.  |
 | [Anthropic / Claude](anthropic-api-key.md)        | Anthropic                | **LLM post-processing** with Claude (clean up/summarize).   |
 
 Every API-key guide follows the same shape: generate the key on the provider's site, then link it on the matching row of that engine's page under **Transcription > Engines**, which stores it in Obsidian's keychain.
@@ -77,6 +78,7 @@ Pick a transcription engine before you sign up anywhere - the choice decides whi
 | **Deepgram**                  | Free credit, then pay-as-go | Yes         | 2 GB     | No      | Meetings and interviews with speakers   |
 | **Google Gemini**             | Free tier, then paid        | Yes         | 2 GB     | No      | Long recordings and reuse for LLM tasks |
 | **Mistral Voxtral**           | Paid, about $0.003 a minute | Yes         | 1 GB     | No      | Long meetings in one whole-file request |
+| **Soniox**                    | Paid, about $0.10 an hour   | Yes         | 300 min  | No      | Korean and other non-English speech     |
 | **Local whisper.cpp**         | Free                        | No          | -        | Yes     | Private, offline transcription          |
 
 \* Files over 25 MB are automatically resampled to 16 kHz mono and split into upload-sized chunks, then stitched onto one timeline. See [Transcription](../transcription.md) for the full mechanics.
@@ -84,7 +86,7 @@ Pick a transcription engine before you sign up anywhere - the choice decides whi
 Quick rules of thumb:
 
 - **One speaker, want it accurate** > Whisper API (use [Groq](groq-whisper-setup.md) for a free tier, or [OpenAI](openai-whisper-api-key.md)).
-- **Multiple speakers / meetings** > [Deepgram](deepgram-api-key.md), [Google Gemini](gemini-api-key.md), or [Mistral Voxtral](mistral-api-key.md) - all three support speaker diarization.
+- **Multiple speakers / meetings** > [Deepgram](deepgram-api-key.md), [Google Gemini](gemini-api-key.md), or [Mistral Voxtral](mistral-api-key.md), or [Soniox](soniox-api-key.md) - all four support speaker diarization.
 - **Long recordings, or you also want LLM summaries** > [Google Gemini](gemini-api-key.md).
 - **Must stay offline / no API key** > [Local whisper.cpp](local-whisper-cpp.md).
 

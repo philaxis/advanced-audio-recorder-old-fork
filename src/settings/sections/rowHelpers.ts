@@ -224,7 +224,14 @@ export function transcriptionEngineChoiceRow(
 ): SettingGroupItem {
 	return {
 		name,
-		aliases: ['provider', 'whisper', 'deepgram', 'gemini', 'elevenlabs'],
+		aliases: [
+			'provider',
+			'whisper',
+			'deepgram',
+			'gemini',
+			'soniox',
+			'elevenlabs',
+		],
 		desc,
 		visible,
 		control: {

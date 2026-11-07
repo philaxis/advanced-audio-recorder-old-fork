@@ -119,6 +119,7 @@ describe('serializing a provider key', () => {
 			mistralApiKey: 'ms-1',
 			anthropicApiKey: 'ak-1',
 			deepSeekApiKey: 'ds-1',
+			sonioxApiKey: 'sx-1',
 		};
 		moveAndConfirm(settings, new SecretStorage());
 
@@ -126,7 +127,15 @@ describe('serializing a provider key', () => {
 			serializeSettings(settings, PlatformKind.Desktop),
 		);
 
-		for (const key of ['sk-1', 'dg-1', 'gm-1', 'ms-1', 'ak-1', 'ds-1']) {
+		for (const key of [
+			'sk-1',
+			'dg-1',
+			'gm-1',
+			'ms-1',
+			'ak-1',
+			'ds-1',
+			'sx-1',
+		]) {
 			expect(text).not.toContain(key);
 		}
 	});

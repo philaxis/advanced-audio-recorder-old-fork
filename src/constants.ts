@@ -412,6 +412,7 @@ export const TRANSCRIPTION_PROVIDER_IDS = {
 	DEEPGRAM: 'deepgram',
 	GEMINI: 'gemini',
 	VOXTRAL: 'voxtral',
+	SONIOX: 'soniox',
 } as const;
 
 /**
@@ -658,6 +659,72 @@ export const VOXTRAL_AUDIO_EXTENSIONS: ReadonlySet<string> = new Set([
 	FORMAT_FLAC,
 	FORMAT_OGG,
 ]);
+
+/** Default Soniox API base URL; the provider appends `/files` and `/transcriptions`. */
+export const DEFAULT_SONIOX_BASE_URL = 'https://api.soniox.com/v1';
+
+/** Default Soniox transcription model id: the current asynchronous generation. */
+export const DEFAULT_SONIOX_MODEL = 'stt-async-v6';
+
+/**
+ * Seed Soniox model ids for the model picker on first run; the list is
+ * user-editable. Only the asynchronous catalogue is seeded: the `stt-rt-*`
+ * models take a streaming connection, which a recorded file never uses. The
+ * v5 id is the generation Soniox has deprecated (removal December 15, 2026,
+ * after which it is routed to v6), kept so a recording can still be compared
+ * against the previous model until then. See {@link SONIOX_MODELS_DOC_URL} for
+ * the authoritative, current list.
+ */
+export const SONIOX_MODEL_SUGGESTIONS = ['stt-async-v6', 'stt-async-v5'];
+
+/** Authoritative, current list of Soniox speech-to-text models. */
+export const SONIOX_MODELS_DOC_URL = 'https://soniox.com/docs/stt/models';
+
+/**
+ * Per-request upload ceiling for Soniox, in bytes. Soniox documents no limit
+ * for one file (only 10 GB of storage across all of them), so this is the
+ * renderer's: the request body is built in memory, which Deepgram's 2 GB
+ * already assumes. The documented 300 minutes of audio per file
+ * ({@link SONIOX_MAX_REQUEST_SECONDS}) binds long before it - five hours of
+ * 16 kHz mono WAV is about 576 MB.
+ */
+export const SONIOX_MAX_REQUEST_BYTES = 2 * 1024 * 1024 * 1024;
+
+/**
+ * Longest file Soniox transcribes in one request, in seconds: 300 minutes,
+ * which its limits page states cannot be raised. A container the endpoint reads
+ * is uploaded whole and the endpoint holds it to this; a recording that is
+ * decoded anyway has its length measured and is split here instead.
+ */
+export const SONIOX_MAX_REQUEST_SECONDS = 300 * 60;
+
+/**
+ * Pause before the first status poll of a Soniox transcription, in
+ * milliseconds. Short, because a recording of a few seconds finishes in about
+ * as long as it takes to ask once.
+ */
+export const SONIOX_POLL_INITIAL_INTERVAL_MS = 1000;
+
+/**
+ * Longest pause between two status polls, in milliseconds. The interval grows
+ * by {@link SONIOX_POLL_BACKOFF_FACTOR} from the initial one up to this, so a
+ * long recording is asked about every ten seconds rather than every second.
+ */
+export const SONIOX_POLL_MAX_INTERVAL_MS = 10_000;
+
+/** Growth of the pause between two Soniox status polls. */
+export const SONIOX_POLL_BACKOFF_FACTOR = 1.5;
+
+/**
+ * Aggregate token budget for the dictionary terms sent as `context.terms`.
+ *
+ * Soniox rejects a request whose whole context exceeds 8,000 tokens
+ * (about 10,000 characters) with an `invalid_request` error. The terms are
+ * measured by their UTF-8 byte length, which never undershoots a token count,
+ * and the budget stays under the ceiling so the quotes and commas of the JSON
+ * array, which the byte count does not see, cannot carry a full list over it.
+ */
+export const SONIOX_CONTEXT_TOKEN_BUDGET = 7000;
 
 /**
  * Default Gemini API base URL. The provider appends `/v1beta/...` for model

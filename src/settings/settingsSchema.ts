@@ -24,6 +24,9 @@ import {
 	DEFAULT_MISTRAL_BASE_URL,
 	DEFAULT_DEEPSEEK_BASE_URL,
 	DEFAULT_VOXTRAL_MODEL,
+	DEFAULT_SONIOX_BASE_URL,
+	DEFAULT_SONIOX_MODEL,
+	SONIOX_MODEL_SUGGESTIONS,
 	VOXTRAL_MODEL_SUGGESTIONS,
 	DEFAULT_LOCAL_WHISPER_TIMEOUT_MINUTES,
 	DEFAULT_TRANSCRIPTION_TIMEOUT_MINUTES,
@@ -626,6 +629,15 @@ export interface AudioRecorderSettings {
 	deepSeekApiKey: string;
 	/** ID of the keychain secret holding the DeepSeek key, or '' */
 	deepSeekApiKeySecret: string;
+	/** Soniox endpoint and key, read by its one transcription catalogue. */
+	sonioxBaseUrl: string;
+	sonioxApiKey: string;
+	/** ID of the keychain secret holding the Soniox key, or '' */
+	sonioxApiKeySecret: string;
+	/** Soniox transcription model id (the selected one) */
+	sonioxModel: string;
+	/** Known Soniox model ids offered in the picker (user-editable) */
+	sonioxModels: string[];
 	/** Voxtral transcription model id (the selected one) */
 	voxtralModel: string;
 	/** Known Voxtral model ids offered in the picker (user-editable) */
@@ -1063,6 +1075,11 @@ export const DEFAULT_SETTINGS: AudioRecorderSettings = {
 	deepSeekBaseUrl: DEFAULT_DEEPSEEK_BASE_URL,
 	deepSeekApiKey: '',
 	deepSeekApiKeySecret: '',
+	sonioxBaseUrl: DEFAULT_SONIOX_BASE_URL,
+	sonioxApiKey: '',
+	sonioxApiKeySecret: '',
+	sonioxModel: DEFAULT_SONIOX_MODEL,
+	sonioxModels: [...SONIOX_MODEL_SUGGESTIONS],
 	voxtralModel: DEFAULT_VOXTRAL_MODEL,
 	voxtralModels: [...VOXTRAL_MODEL_SUGGESTIONS],
 	localWhisperBinaryPath: '',

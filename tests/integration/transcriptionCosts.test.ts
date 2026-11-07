@@ -144,6 +144,20 @@ describe('resolveEnginePricing', () => {
 			model: 'voxtral-mini-transcribe-realtime-2602',
 			expected: { kind: 'perMinute', usdPerMinute: 0.006 },
 		},
+		{
+			// $0.10 per hour for file transcription, the same for both
+			// generations the picker offers.
+			name: 'the Soniox v6 async model, per audio minute',
+			engine: TRANSCRIPTION_PROVIDER_IDS.SONIOX,
+			model: 'stt-async-v6',
+			expected: { kind: 'perMinute', usdPerMinute: 0.1 / 60 },
+		},
+		{
+			name: 'the Soniox v5 async model at the same rate',
+			engine: TRANSCRIPTION_PROVIDER_IDS.SONIOX,
+			model: 'stt-async-v5',
+			expected: { kind: 'perMinute', usdPerMinute: 0.1 / 60 },
+		},
 	])('prices $name', ({ engine, model, expected }) => {
 		expect(resolveEnginePricing(engine, model)).toEqual(expected);
 	});
@@ -268,6 +282,7 @@ describe('selectedEngineModel', () => {
 			deepgramModel: 'nova-3',
 			geminiModel: 'gemini-2.5-flash',
 			voxtralModel: 'voxtral-mini-latest',
+			sonioxModel: 'stt-async-v6',
 		});
 		expect(
 			selectedEngineModel(
@@ -284,6 +299,9 @@ describe('selectedEngineModel', () => {
 		expect(
 			selectedEngineModel(settings, TRANSCRIPTION_PROVIDER_IDS.VOXTRAL),
 		).toBe('voxtral-mini-latest');
+		expect(
+			selectedEngineModel(settings, TRANSCRIPTION_PROVIDER_IDS.SONIOX),
+		).toBe('stt-async-v6');
 		expect(
 			selectedEngineModel(
 				settings,

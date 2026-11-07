@@ -1,6 +1,6 @@
 # Get a Google Gemini API key
 
-Google Gemini is a multimodal model that transcribes audio directly. In Advanced Audio Recorder it is one of the five [transcription](../transcription.md) engines, and the **same key** also powers the [Gemini LLM post-processing](../llm-post-processing.md) provider - set it once and both features work. Gemini takes the whole recording in one piece (inline in the request up to 14 MB, uploaded through the File API up to 2 GB), supports speaker [diarization](../transcription.md#speakers-and-diarization), and Google's [AI Studio](https://aistudio.google.com/apikey) hands out a key with a free tier in a couple of clicks. This guide walks you from a blank settings tab to a working transcript.
+Google Gemini is a multimodal model that transcribes audio directly. In Advanced Audio Recorder it is one of the six [transcription](../transcription.md) engines, and the **same key** also powers the [Gemini LLM post-processing](../llm-post-processing.md) provider - set it once and both features work. Gemini takes the whole recording in one piece (inline in the request up to 14 MB, uploaded through the File API up to 2 GB), supports speaker [diarization](../transcription.md#speakers-and-diarization), and Google's [AI Studio](https://aistudio.google.com/apikey) hands out a key with a free tier in a couple of clicks. This guide walks you from a blank settings tab to a working transcript.
 
 - [Why Gemini](#why-gemini)
 - [Step 1: Create the API key in Google AI Studio](#step-1-create-the-api-key-in-google-ai-studio)

@@ -29,10 +29,12 @@ import {
 	DEFAULT_GEMINI_BASE_URL,
 	DEFAULT_MISTRAL_BASE_URL,
 	DEFAULT_OPENAI_BASE_URL,
+	DEFAULT_SONIOX_BASE_URL,
 	GEMINI_MODELS_DOC_URL,
 	LLM_PROVIDER_IDS,
 	MISTRAL_MODELS_DOC_URL,
 	OPENAI_MODELS_DOC_URL,
+	SONIOX_MODELS_DOC_URL,
 	TRANSCRIPTION_PROVIDER_IDS,
 	VOXTRAL_MODELS_DOC_URL,
 	WHISPER_API_MODELS_DOC_URL,
@@ -52,6 +54,7 @@ export const ACCOUNT_IDS = {
 	ANTHROPIC: 'anthropic',
 	MISTRAL: 'mistral',
 	DEEPSEEK: 'deepseek',
+	SONIOX: 'soniox',
 } as const;
 
 /** One account id. */
@@ -69,6 +72,8 @@ export const ENGINE_IDS = {
 	/** Chat catalogue: the mistral-* ids reached through the same account. */
 	MISTRAL_LLM: 'mistral-llm',
 	DEEPSEEK: 'deepseek',
+	/** Speech catalogue: the stt-async-* ids, reached through the Soniox account. */
+	SONIOX: 'soniox',
 	LOCAL_WHISPER: 'local-whisper',
 } as const;
 
@@ -90,6 +95,7 @@ export const EngineLabel = {
 	Voxtral: 'Mistral Voxtral',
 	Mistral: 'Mistral',
 	DeepSeek: 'DeepSeek',
+	Soniox: 'Soniox',
 	LocalWhisper: 'Local whisper.cpp (desktop)',
 } as const;
 
@@ -332,6 +338,23 @@ export const ACCOUNTS: Record<AccountId, ProviderConnection> = {
 		keyFieldDesc: STORED_LOCALLY_DESC,
 		missingKeyMessage: 'Set the DeepSeek API key in settings.',
 	},
+	[ACCOUNT_IDS.SONIOX]: {
+		baseUrlKey: 'sonioxBaseUrl',
+		defaultBaseUrl: DEFAULT_SONIOX_BASE_URL,
+		apiKeyKey: 'sonioxApiKey',
+		apiKeySecretKey: 'sonioxApiKeySecret',
+		baseUrl: (s) => s.sonioxBaseUrl,
+		setBaseUrl: (s, url) => (s.sonioxBaseUrl = url),
+		apiKey: (s) => s.sonioxApiKey,
+		setApiKey: (s, key) => (s.sonioxApiKey = key),
+		apiKeySecret: (s) => s.sonioxApiKeySecret,
+		setApiKeySecret: (s, id) => (s.sonioxApiKeySecret = id),
+		baseUrlFieldDesc:
+			'Soniox API base (default https://api.soniox.com/v1). A project created in a regional data location uses the matching domain instead (api.eu.soniox.com, api.jp.soniox.com or api.in.soniox.com, each followed by /v1).',
+		keyFieldName: 'Soniox API key',
+		keyFieldDesc: STORED_LOCALLY_DESC,
+		missingKeyMessage: 'Set the Soniox API key in settings.',
+	},
 };
 
 /**
@@ -561,6 +584,30 @@ export const ENGINES: Record<EngineId, EngineDescriptor> = {
 			get: (settings) => settings.llmDeepSeekMaxTokens,
 			set: (settings, value) => (settings.llmDeepSeekMaxTokens = value),
 		},
+	},
+	[ENGINE_IDS.SONIOX]: {
+		id: ENGINE_IDS.SONIOX,
+		label: EngineLabel.Soniox,
+		pricingUrl: 'https://soniox.com/pricing',
+		account: ACCOUNT_IDS.SONIOX,
+		transcriptionId: TRANSCRIPTION_PROVIDER_IDS.SONIOX,
+		llmId: null,
+		uploadLimitMb: 0,
+		uploadChunk: null,
+		models: {
+			modelKey: 'sonioxModel',
+			modelsKey: 'sonioxModels',
+			model: (s) => s.sonioxModel,
+			setModel: (s, id) => (s.sonioxModel = id),
+			models: (s) => s.sonioxModels,
+			setModels: (s, ids) => (s.sonioxModels = ids),
+			pickerName: 'Model',
+			pickerDesc:
+				'Pick a Soniox asynchronous model (e.g. stt-async-v6). A recording of up to 300 minutes is sent whole for consistent speaker labels.',
+			docLabel: 'Soniox model list',
+			docUrl: SONIOX_MODELS_DOC_URL,
+		},
+		maxTokens: null,
 	},
 	[ENGINE_IDS.LOCAL_WHISPER]: {
 		id: ENGINE_IDS.LOCAL_WHISPER,
